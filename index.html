@@ -48,8 +48,8 @@
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-success { background: var(--success); }
     .btn-success:hover { background: #2ea043; }
-    .btn-warning { background: #9e6a03; }
-    .btn-warning:hover { background: var(--warning); }
+    .btn-warning { background: var(--warning); color: #000; }
+    .btn-warning:hover { background: #e3b341; }
     .btn-danger { background: var(--danger); }
     .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
     .btn-outline:hover { background: #21262d; }
@@ -63,11 +63,11 @@
     }
     #output-box {
       display: none; background: var(--card); border: 1px solid var(--border);
-      border-radius: 12px; padding: 20px; margin-top: 16px;
+      border-radius: 12px; padding: 16px; margin-top: 16px;
     }
     #result-content h1, #result-content h2, #result-content h3 { color: #58a6ff; margin-top: 18px; }
     #result-content table { width: 100%; border-collapse: collapse; margin: 12px 0; }
-    #result-content th, #result-content td { border: 1px solid var(--border); padding: 8px; text-align: right; }
+    #result-content th, #result-content td { border: 1px solid var(--border); padding: 8px 12px; text-align: right; }
     #result-content th { background: #21262d; }
     #result-content blockquote {
       border-right: 4px solid var(--warning); margin: 10px 0; padding: 8px 14px;
@@ -86,61 +86,53 @@
   </style>
 </head>
 <body>
-
   <header>
-    <h1>📚 مُلخِّصاتي الذكي</h1>
-    <p>ارفع ملف المادة، افهمها بالعامية وبأمثلة واقعية، اسمع الشرح، واختبر نفسك</p>
+    <h1>مُلخِّصاتي - رفيق المذاكرة الذكي</h1>
+    <p>ارفع ملف PDF واختار طريقة المذاكرة أو التلخيص المبسط بالعامية المصرية</p>
   </header>
 
-  <!-- إعداد مفتاح API -->
   <div class="card">
-    <label for="apiKey">🔑 مفتاح الذكاء الاصطناعي (Gemini API Key):</label>
+    <label for="apiKey">مفتاح Gemini API Key</label>
     <div class="row">
-      <input type="password" id="apiKey" placeholder="الصق المفتاح هنا (AIza...)" style="flex: 1;" />
-      <button onclick="saveKey()" class="btn-success">حفظ المفتاح</button>
+      <input type="password" id="apiKey" placeholder="الصق مفتاح Gemini API Key هنا..." />
+      <button class="btn-success" onclick="saveKey()">حفظ المفتاح</button>
     </div>
-    <small id="keyStatus" style="color: var(--muted); display: block; margin-top: 6px;">بيتحفظ على جهازك مرة واحدة بس ومحدش غيرك بيشوفه.</small>
+    <div id="keyStatus"></div>
   </div>
 
-  <!-- رفع ملف PDF -->
   <div class="card">
-    <label>📄 ارفع ملف المادة (PDF):</label>
+    <label>ملف المذاكرة (PDF)</label>
     <div class="file-box" onclick="document.getElementById('pdfFile').click()">
-      <div style="font-size: 2rem;">📁</div>
-      <div id="fileLabel">اضغط هنا لاختيار ملف PDF من جهازك</div>
-      <input type="file" id="pdfFile" accept="application/pdf" style="display: none;" onchange="handleFileSelect(event)" />
+      <div id="fileLabel">اضغط هنا لاختيار ملف PDF</div>
+      <div id="fileInfo"></div>
     </div>
-    <div id="fileInfo" style="text-align: center;"></div>
+    <input type="file" id="pdfFile" accept="application/pdf" style="display: none;" onchange="handleFileSelect(event)" />
 
-    <!-- أزرار الأوامر الجاهزة -->
     <div class="actions-grid">
-      <button onclick="runPrompt('summary')" class="btn-success">🧠 لخص واشرح بالعامية</button>
-      <button onclick="runPrompt('mcq')" class="btn-outline">☑️ أسئلة اختر (MCQ)</button>
-      <button onclick="runPrompt('tf')" class="btn-outline">✔️❌ أسئلة صح وغلط</button>
-      <button onclick="runPrompt('essay')" class="btn-outline">✍️ أسئلة مقالية</button>
+      <button onclick="runPrompt('summary')">تلخيص شامل مبسط</button>
+      <button onclick="runPrompt('mcq')">أسئلة اختيار من متعدد</button>
+      <button onclick="runPrompt('tf')">أسئلة صح أو خطأ</button>
+      <button onclick="runPrompt('essay')">أسئلة مقالية</button>
     </div>
 
-    <!-- سؤال مخصص -->
     <div style="margin-top: 14px;">
+      <label for="customQuestion">أو اسأل سؤالاً محدداً عن الملف</label>
       <div class="row">
-        <input type="text" id="customQuestion" placeholder="أو اكتب أي سؤال معين عايز تسأله في الملف..." style="flex: 1;" />
-        <button onclick="runPrompt('custom')">اسأل 🚀</button>
+        <input type="text" id="customQuestion" placeholder="اكتب سؤالك هنا..." />
+        <button class="btn-warning" onclick="runPrompt('custom')">اسأل</button>
       </div>
     </div>
   </div>
 
-  <!-- مؤشر التحميل -->
-  <div id="loader" class="loader">⏳ جاري قراءة الملف وتجهيز الشرح بالعامية... استنى ثواني</div>
+  <div class="loader" id="loader">جاري التحليل والتلخيص بأسلوب مبسط... استنى لحظة</div>
 
-  <!-- منطقة عرض النتيجة والصوت -->
   <div id="output-box">
-    <div class="row" style="justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 14px;">
-      <strong>📖 النتيجة:</strong>
+    <div class="row" style="justify-content: space-between; margin-bottom: 10px;">
       <div class="row">
-        <button onclick="speakText()" class="btn-warning" id="speakBtn">🔊 اسمع الشرح</button>
-        <button onclick="stopSpeech()" class="btn-danger">⏹️ إيقاف</button>
-        <button onclick="copyResult()" class="btn-outline">📋 نسخ</button>
+        <button class="btn-success" onclick="speakText()">استماع صوتي</button>
+        <button class="btn-outline" onclick="stopSpeech()">إيقاف الصوت</button>
       </div>
+      <button class="btn-outline" onclick="copyResult()">نسخ النتيجة</button>
     </div>
     <div id="speech-status"></div>
     <div id="result-content"></div>
@@ -157,8 +149,7 @@
       const savedKey = localStorage.getItem("gemini_api_key");
       if (savedKey) {
         document.getElementById("apiKey").value = savedKey;
-        document.getElementById("keyStatus").innerHTML = "✅ المفتاح محفوظ وجاهز للاستخدام.";
-        document.getElementById("keyStatus").style.color = "#3fb950";
+        document.getElementById("keyStatus").innerHTML = '<span class="status-badge">المفتاح محفوظ وجاهز للاستخدام</span>';
       }
       if ("speechSynthesis" in window) {
         window.speechSynthesis.getVoices();
@@ -167,21 +158,20 @@
 
     function saveKey() {
       const key = document.getElementById("apiKey").value.trim();
-      if (!key) return alert("من فضلك حط الـ API Key الأول!");
+      if (!key) return alert("من فضلك أدخل مفتاح API Key الأول");
       localStorage.setItem("gemini_api_key", key);
-      document.getElementById("keyStatus").innerHTML = "✅ تم حفظ المفتاح بنجاح!";
-      document.getElementById("keyStatus").style.color = "#3fb950";
+      document.getElementById("keyStatus").innerHTML = '<span class="status-badge">تم حفظ المفتاح بنجاح</span>';
     }
 
     function handleFileSelect(event) {
       const file = event.target.files[0];
       if (!file) return;
       if (file.type !== "application/pdf") {
-        alert("من فضلك اختار ملف بصيغة PDF فقط.");
+        alert("من فضلك اختر ملف PDF فقط");
         return;
       }
       document.getElementById("fileLabel").innerText = file.name;
-      document.getElementById("fileInfo").innerHTML = `<span class="status-badge">تم تحميل: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</span>`;
+      document.getElementById("fileInfo").innerHTML = `<span class="status-badge">تم تحميل: ${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>`;
 
       const reader = new FileReader();
       reader.onload = () => {
@@ -191,32 +181,33 @@
     }
 
     function getSystemInstruction(type) {
-      const basePersona = `أنت دكتور جامعي شاطر جداً ودمك خفيف، بتشرح للطلبة في أي كلية (حقوق، طب، هندسة، تجارة، آداب، إلخ).
-      قواعدك الأساسية:
-      1. التزم بكل المعلومات الموجودة في ملف الـ PDF المرفق ولا تترك أي معلومة مهمة أو فرعية.
-      2. اشرح بأسلوب سهل وبسيط ومنظم في نقاط واضحة وجداول مقارنة لو أمكن.
-      3. بعد شرح كل نقطة أو قاعدة، اضرب مثال عملي بالعامية المصرية من الحياة اليومية (على طريقة أمثلة عم زغلول والمواقف الواقعية عشان المعلومة تثبت في الدماغ).`;
+      const basePersona =
+        "أنت دكتور جامعي شاطر جداً ومبسط ومباشر، تشرح للطلبة وتساعدهم يحفظوا بسرعة بدون تعقيد أو إطالة. " +
+        "القواعد الأساسية:\n" +
+        "1. التزم بكل معلومة وحكم ومادة وفرق موجود في ملف الـ PDF بالكامل، ولا تترك أي معلومة مهمة أو تسقط أي عنصر.\n" +
+        "2. اشرح بأسلوب مبسط جداً ومختصر وواضح ومباشر في نقاط مرتبة يسهل حفظها ومراجعتها بسرعة بدون حشو أو تطويل.\n" +
+        "3. بعد شرح كل نقطة أو فكرة، اضرب مثالاً عملياً قصيراً بالعامية المصرية من الحياة اليومية (على أسلوب أمثلة عم زغلول ومواقف الشارع والبيت والعمل) لتوضيح المعنى وتثبيته.\n";
 
       if (type === "summary") {
-        return basePersona + `\nالمطلوب دلوقتي: لخص الملف بالكامل من أوله لآخره من غير ما تسيب ولا معلومة، واشرح كل نقطة ببساطة مع مثال بالعامية المصرية بعدها مباشرة.`;
+        return basePersona + "لخّص الملف بالكامل من أوله لآخره في نقاط مبسطة وسهلة الحفظ من غير ما تسيب ولا معلومة، واشرح كل نقطة ببساطة ومعاها مثال بالعامية المصرية بعدها مباشرة.";
       } else if (type === "mcq") {
-        return basePersona + `\nالمطلوب دلوقتي: اعمل امتحان شامل من قلب الملف بنظام (اختر من متعدد MCQ) لا يقل عن 10 أسئلة ذكية بتغطي كل أجزاء الملف، واكتب الإجابات الصحيحة مع شرح سبب الاختيار بالعامية في آخر الامتحان.`;
+        return basePersona + "ضع أسئلة اختيار من متعدد (MCQ) بأسلوب مبسط وواضح من قلب الملف بالكامل، واكتب الإجابة الصحيحة وسبب اختيارها ببساطة في الآخر.";
       } else if (type === "tf") {
-        return basePersona + `\nالمطلوب دلوقتي: اعمل امتحان شامل من قلب الملف بنظام (صح أم خطأ) لا يقل عن 10 أسئلة دقيقة وفيها تريكات الامتحانات، واكتب الإجابات الصحيحة مع تصحيح الخطأ وشرحه بالعامية في الآخر.`;
+        return basePersona + "ضع أسئلة صح أو خطأ مبسطة وواضحة من قلب الملف بالكامل، واكتب الإجابة الصحيحة مع تصحيح الخطأ وشرح السبب ببساطة.";
       } else if (type === "essay") {
-        return basePersona + `\nالمطلوب دلوقتي: طلع أهم الأسئلة المقالية المتوقعة في الامتحان من الملف ده، واكتب الإجابة النموذجية المنظمة لكل سؤال في عناصر واضحة وسهلة الحفظ.`;
+        return basePersona + "ضع أسئلة مقالية مركزة ومبسطة من قلب الملف بالكامل، واكتب الإجابة النموذجية المختصرة في نقاط يسهل حفظها.";
       } else {
         const customQ = document.getElementById("customQuestion").value.trim();
-        return basePersona + `\nسؤال الطالب عن الملف: ${customQ}`;
+        return basePersona + `أجب عن سؤال الطالب بناءً على الملف بأسلوب مبسط ومباشر مع مثال بالعامية المصرية: ${customQ}`;
       }
     }
 
     async function runPrompt(type) {
       const apiKey = document.getElementById("apiKey").value.trim();
-      if (!apiKey) return alert("⚠️ حط الـ API Key الأول فوق واضغط حفظ!");
-      if (!pdfBase64) return alert("⚠️ ارفع ملف الـ PDF الأول!");
+      if (!apiKey) return alert("اكتب وحفظ مفتاح API Key الأول");
+      if (!pdfBase64) return alert("ارفع ملف PDF الأول");
       if (type === "custom" && !document.getElementById("customQuestion").value.trim()) {
-        return alert("⚠️ اكتب سؤالك في الخانة الأول!");
+        return alert("اكتب سؤالك في الخانة الأول");
       }
 
       stopSpeech();
@@ -226,14 +217,14 @@
       const promptText = getSystemInstruction(type);
 
       try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(apiKey), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{
               parts: [
-                { text: promptText },
-                { inline_data: { mime_type: "application/pdf", data: pdfBase64 } }
+                { inline_data: { mime_type: "application/pdf", data: pdfBase64 } },
+                { text: promptText }
               ]
             }]
           })
@@ -243,68 +234,48 @@
         document.getElementById("loader").style.display = "none";
 
         if (data.error) {
-          alert("حصل خطأ: " + data.error.message);
+          alert("خطأ من Gemini: " + data.error.message);
           return;
         }
 
-        rawOutputText = data.candidates[0].content.parts[0].text;
+        rawOutputText = data.candidates?.[0]?.content?.parts?.[0]?.text || "لم يتم استلام رد من النموذج";
         document.getElementById("result-content").innerHTML = marked.parse(rawOutputText);
         document.getElementById("output-box").style.display = "block";
-        document.getElementById("output-box").scrollIntoView({ behavior: "smooth" });
-
       } catch (err) {
         document.getElementById("loader").style.display = "none";
-        alert("تأكد من اتصالك بالإنترنت وحاول تاني.\n" + err.message);
+        alert("حصل خطأ في الاتصال: " + err.message);
       }
     }
 
-    function getArabicVoice() {
-      const voices = window.speechSynthesis.getVoices();
-      if (!voices || voices.length === 0) return null;
-      return (
-        voices.find(v => v.lang && v.lang.toLowerCase().includes("ar-eg")) ||
-        voices.find(v => v.lang && v.lang.toLowerCase().startsWith("ar")) ||
-        null
-      );
-    }
-
-    function splitIntoChunks(text, maxLen = 220) {
-      const clean = text
-        .replace(/[#*`_>-]/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-
-      const sentences = clean.split(/([.!?؟،\n]+)/);
+    function splitTextIntoChunks(text, maxLen = 220) {
+      const clean = text.replace(/[#*`>|_-]+/g, " ").replace(/\s+/g, " ").trim();
+      if (!clean) return [];
+      const sentences = clean.match(/[^.!?؟\n]+[.!?؟\n]?/g) || [clean];
       const chunks = [];
       let current = "";
-
-      for (let part of sentences) {
-        if ((current + part).length > maxLen && current.trim()) {
-          chunks.push(current.trim());
-          current = part;
+      for (const s of sentences) {
+        if ((current + " " + s).trim().length <= maxLen) {
+          current = (current + " " + s).trim();
         } else {
-          current += part;
+          if (current) chunks.push(current);
+          current = s.trim();
         }
       }
-      if (current.trim()) chunks.push(current.trim());
+      if (current) chunks.push(current);
       return chunks;
     }
 
     function speakText() {
-      if (!rawOutputText) return alert("مفيش شرح يتقرأ لسه!");
       if (!("speechSynthesis" in window)) {
-        return alert("المتصفح ده مش بيدعم قراءة النصوص بالصوت.");
+        return alert("المتصفح لا يدعم القراءة الصوتية");
       }
-
       stopSpeech();
-      speechChunks = splitIntoChunks(rawOutputText, 220);
-      currentChunkIndex = 0;
+      speechChunks = splitTextIntoChunks(rawOutputText);
+      if (!speechChunks.length) return;
+
       isSpeakingQueue = true;
-
-      const statusEl = document.getElementById("speech-status");
-      statusEl.style.display = "block";
-      statusEl.innerText = "🔊 جاري تشغيل القراءة الصوتية...";
-
+      currentChunkIndex = 0;
+      document.getElementById("speech-status").style.display = "block";
       playNextChunk();
     }
 
@@ -314,37 +285,24 @@
         return;
       }
 
-      const chunk = speechChunks[currentChunkIndex];
-      const utterance = new SpeechSynthesisUtterance(chunk);
-      const voice = getArabicVoice();
-      if (voice) utterance.voice = voice;
-      utterance.lang = voice ? voice.lang : "ar-EG";
-      utterance.rate = 1.0;
+      const utter = new SpeechSynthesisUtterance(speechChunks[currentChunkIndex]);
+      utter.lang = "ar-EG";
+      const voices = window.speechSynthesis.getVoices();
+      const arabicVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith("ar"));
+      if (arabicVoice) utter.voice = arabicVoice;
 
-      const statusEl = document.getElementById("speech-status");
-      statusEl.innerText = `🔊 بيقرأ جزء ${currentChunkIndex + 1} من ${speechChunks.length}...`;
+      document.getElementById("speech-status").innerText = `جاري القراءة الصوتية (${currentChunkIndex + 1} / ${speechChunks.length})...`;
 
-      utterance.onend = () => {
+      utter.onend = () => {
         currentChunkIndex++;
-        if (isSpeakingQueue) {
-          setTimeout(playNextChunk, 120);
-        }
+        playNextChunk();
+      };
+      utter.onerror = () => {
+        currentChunkIndex++;
+        playNextChunk();
       };
 
-      utterance.onerror = () => {
-        currentChunkIndex++;
-        if (isSpeakingQueue && currentChunkIndex < speechChunks.length) {
-          setTimeout(playNextChunk, 200);
-        } else {
-          stopSpeech();
-        }
-      };
-
-      try {
-        window.speechSynthesis.speak(utterance);
-      } catch (e) {
-        statusEl.innerText = "⚠️ تعذر تشغيل الصوت على هذا الجهاز.";
-      }
+      window.speechSynthesis.speak(utter);
     }
 
     function stopSpeech() {
@@ -353,16 +311,15 @@
       if ("speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
-      const statusEl = document.getElementById("speech-status");
-      if (statusEl) {
-        statusEl.style.display = "none";
-        statusEl.innerText = "";
-      }
+      document.getElementById("speech-status").style.display = "none";
+      document.getElementById("speech-status").innerText = "";
     }
 
     function copyResult() {
-      navigator.clipboard.writeText(rawOutputText);
-      alert("✅ تم نسخ الشرح!");
+      if (!rawOutputText) return;
+      navigator.clipboard.writeText(rawOutputText).then(() => {
+        alert("تم نسخ التلخيص بنجاح");
+      });
     }
   </script>
 </body>
